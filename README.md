@@ -220,10 +220,8 @@ MIT — see [`LICENSE`](LICENSE)
 
 ## References
 
-- [Stellar Protocol 25 (X-Ray) Blog Post](https://stellar.org/blog/developers/protocol-25-x-ray)
+
 - [CAP-0074: BN254 Host Functions](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0074.md)
 - [CAP-0075: Poseidon Hash](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0075.md)
-- [Penumbra Shielded Pool](https://protocol.penumbra.zone/main/shielded-pool.html)
-- [How Tornado Cash Works](https://tornado-cash.medium.com/tornado-cash-how-it-works-1c9c87c06769)
 - [Noir Language Docs](https://noir-lang.org/docs)
 - [Soroban SDK Docs](https://docs.rs/soroban-sdk)
