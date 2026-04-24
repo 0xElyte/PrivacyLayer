@@ -61,7 +61,7 @@ export function computeNullifierHashHex(nullifierHex: string, rootHex: string): 
 
 /**
  * ProvingBackend
- * 
+ *
  * Abstraction for the proof generation engine (e.g., Barretenberg).
  * This allows the SDK to remain agnostic of the runtime (Node.js vs Browser).
  */
@@ -76,7 +76,7 @@ export interface ProvingBackend {
 
 /**
  * VerifyingBackend
- * 
+ *
  * Abstraction for the proof verification engine.
  */
 export interface VerifyingBackend {
@@ -91,8 +91,30 @@ export interface VerifyingBackend {
 }
 
 /**
+ * PreparedWitness
+ *
+ * Strongly-typed witness ready for the withdrawal circuit entrypoint defined
+ * in circuits/withdraw/src/main.nr.  All field values are canonical 64-char
+ * hex strings (32 bytes, big-endian, no 0x prefix).
+ */
+export interface PreparedWitness {
+  // Private witnesses
+  nullifier: string;
+  secret: string;
+  leaf_index: string;
+  hash_path: string[];
+  // Public inputs
+  root: string;
+  nullifier_hash: string;
+  recipient: string;
+  amount: string;
+  relayer: string;
+  fee: string;
+}
+
+/**
  * ProofGenerator
- * 
+ *
  * Logic to orchestrate Noir proof generation for withdrawals.
  * This class prepares the circuit witnesses and interacts with a ProvingBackend.
  */
@@ -115,19 +137,30 @@ export class ProofGenerator {
    */
   async generate(witness: any): Promise<Uint8Array> {
     if (!this.backend) {
-      throw new Error('Proving backend not configured. Please provide a backend to the ProofGenerator.');
+      throw new Error(
+        'Proving backend not configured. Please provide a backend to the ProofGenerator.'
+      );
     }
     return this.backend.generateProof(witness);
   }
 
   /**
    * Prepares the witness inputs for the Noir withdrawal circuit.
+   *
+   * All field values are encoded with canonical helpers from encoding.ts:
+   * - Note scalars (nullifier, secret) are 31-byte buffers → field hex
+   * - Merkle nodes are 32-byte buffers → field hex (reduced mod r)
+   * - Stellar addresses are SHA-256 hashed → field hex (stand-in for contract decoder)
+   * - nullifier_hash = H(nullifier_field, root_field) matching the circuit definition
+   *
+   * The returned shape exactly matches the circuit parameter list in
+   * circuits/withdraw/src/main.nr.
    */
   static async prepareWitness(
     note: Note,
     merkleProof: MerkleProof,
     recipient: string,
-    relayer: string = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF', // Zero address
+    relayer: string = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
     fee: bigint = 0n
   ): Promise<WithdrawalWitness> {
     const rootHex = merkleProof.root.toString('hex');
@@ -150,7 +183,7 @@ export class ProofGenerator {
   }
 
   /**
-   * Formats a raw proof from Noir/Barretenberg into the format 
+   * Formats a raw proof from Noir/Barretenberg into the format
    * expected by the Soroban contract.
    */
   static formatProof(rawProof: Uint8Array): Buffer {
