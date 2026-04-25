@@ -5,9 +5,9 @@
 use soroban_sdk::{BytesN, Env};
 
 use crate::crypto::merkle;
-use crate::storage::{config, nullifier};
+use crate::storage::{analytics, config, nullifier};
 use crate::types::errors::Error;
-use crate::types::state::{Config, PoolConfig, PoolId};
+use crate::types::state::{AnalyticsSnapshot, PerformanceMetricKind, PoolConfig};
 
 /// Returns the current Merkle root (most recent) for a specific pool.
 pub fn get_root(env: Env, pool_id: PoolId) -> Result<BytesN<32>, Error> {
@@ -21,9 +21,14 @@ pub fn deposit_count(env: Env, pool_id: PoolId) -> Result<u32, Error> {
     Ok(merkle::get_tree_state(&env, &pool_id).next_index)
 }
 
-/// Check if a root is in the historical root buffer of a specific pool.
-pub fn is_known_root(env: Env, pool_id: PoolId, root: BytesN<32>) -> bool {
-    merkle::is_known_root(&env, &pool_id, &root)
+/// Returns the total number of successful withdrawals.
+pub fn withdraw_count(env: Env) -> u64 {
+    analytics::withdrawal_count(&env)
+}
+
+/// Check if a root is in the historical root buffer.
+pub fn is_known_root(env: Env, root: BytesN<32>) -> bool {
+    merkle::is_known_root(&env, &root)
 }
 
 /// Check if a nullifier has been spent in a specific pool.
@@ -39,4 +44,36 @@ pub fn get_pool_config(env: Env, pool_id: PoolId) -> Result<PoolConfig, Error> {
 /// Returns the global contract configuration.
 pub fn get_global_config(env: Env) -> Result<Config, Error> {
     config::load_global_config(&env)
+}
+
+/// Record an aggregate page view event (no identifiers).
+pub fn record_page_view(env: Env) -> Result<(), Error> {
+    config::load(&env)?;
+    analytics::record_page_view(&env);
+    Ok(())
+}
+
+/// Record an aggregate error event (no identifiers).
+pub fn record_error(env: Env) -> Result<(), Error> {
+    config::load(&env)?;
+    analytics::record_error(&env);
+    Ok(())
+}
+
+/// Record aggregate client-side performance measurement (no identifiers).
+pub fn record_performance(
+    env: Env,
+    kind: PerformanceMetricKind,
+    duration_ms: u32,
+) -> Result<(), Error> {
+    config::load(&env)?;
+    analytics::record_performance(&env, kind, duration_ms);
+    Ok(())
+}
+
+/// Returns aggregate analytics snapshot for public dashboards.
+pub fn analytics_snapshot(env: Env) -> Result<AnalyticsSnapshot, Error> {
+    config::load(&env)?;
+    let deposits = merkle::get_tree_state(&env).next_index;
+    Ok(analytics::snapshot(&env, deposits))
 }

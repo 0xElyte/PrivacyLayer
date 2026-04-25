@@ -5,7 +5,7 @@
 use soroban_sdk::{token, Address, BytesN, Env};
 
 use crate::crypto::merkle;
-use crate::storage::config;
+use crate::storage::{analytics, config};
 use crate::types::errors::Error;
 use crate::types::events::emit_deposit;
 use crate::utils::validation;
@@ -42,7 +42,8 @@ pub fn execute(
     let (leaf_index, new_root) = merkle::insert(&env, &pool_id, commitment.clone())?;
 
     // Emit deposit event (no depositor address for privacy)
-    emit_deposit(&env, pool_id, commitment, leaf_index, new_root.clone());
+    emit_deposit(&env, commitment, leaf_index, new_root.clone());
+    analytics::record_deposit_success(&env);
 
     Ok((leaf_index, new_root))
 }
