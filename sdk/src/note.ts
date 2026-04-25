@@ -71,10 +71,12 @@ export class Note {
   /**
    * In a real implementation, this would use a WASM-based Poseidon hash
    * compatible with the Noir circuit and Soroban host function.
+   *
+   * Preimage: [nullifier, secret, poolId]
    */
   getCommitment(): Buffer {
     // Placeholder: In production, use @noir-lang/barretenberg or similar
-    // for Poseidon(nullifier, secret)
+    // for Poseidon(nullifier, secret, poolId)
     return Buffer.alloc(32);
   }
 
