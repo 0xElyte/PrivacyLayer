@@ -26,6 +26,7 @@ for file in issues/*.md; do
         count=$((count + 1))
         echo "✅ Created issue #$count"
         sleep 2
+        # sleep2
     fi
 done
 
