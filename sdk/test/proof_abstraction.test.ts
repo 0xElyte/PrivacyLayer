@@ -30,7 +30,6 @@ describe('Proving Path Abstraction', () => {
       note,
       merkleProof,
       recipient: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
-      relayer: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
       fee: 0n
     };
     

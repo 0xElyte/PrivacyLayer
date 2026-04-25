@@ -64,6 +64,7 @@ export function assertValidStellarAccountId(address: string, label: string = 'ad
  * (nullifier hash binding, fee / relayer rules) before a proving backend is invoked.
  */
 export function assertValidPreparedWithdrawalWitness(witness: PreparedWitness): void {
+  assertFieldHexString(witness.pool_id, 'pool_id');
   assertFieldHexString(witness.nullifier, 'nullifier');
   assertFieldHexString(witness.secret, 'secret');
   assertFieldHexString(witness.root, 'root');

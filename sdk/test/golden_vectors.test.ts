@@ -8,9 +8,11 @@ import {
   poolIdToField,
   computeNullifierHash,
   packWithdrawalPublicInputs,
+  serializeWithdrawalPublicInputs,
   stellarAddressToField,
   WITHDRAWAL_PUBLIC_INPUT_SCHEMA,
 } from '../src/encoding';
+import { buildWithdrawalPublicInputLayout } from '../src/withdraw';
 
 // ---------------------------------------------------------------------------
 // Load golden fixture
@@ -269,6 +271,37 @@ describe('Withdrawal public-input schema ordering (ZK-032)', () => {
     expect(packed[WITHDRAWAL_PUBLIC_INPUT_SCHEMA.indexOf('fee')]).toBe('7');
   });
 
+  it('serializeWithdrawalPublicInputs emits canonical verifier byte order', () => {
+    const serialized = serializeWithdrawalPublicInputs({
+      pool_id: 'aa'.repeat(32),
+      root: 'bb'.repeat(32),
+      nullifier_hash: 'cc'.repeat(32),
+      recipient: 'dd'.repeat(32),
+      amount: '999',
+      relayer: 'ee'.repeat(32),
+      fee: '7',
+    });
+
+    expect(serialized.fields).toEqual([
+      'aa'.repeat(32),
+      'bb'.repeat(32),
+      'cc'.repeat(32),
+      'dd'.repeat(32),
+      '999',
+      'ee'.repeat(32),
+      '7',
+    ]);
+    expect(serialized.bytes.toString('hex')).toBe([
+      'aa'.repeat(32),
+      'bb'.repeat(32),
+      'cc'.repeat(32),
+      'dd'.repeat(32),
+      '0'.repeat(61) + '3e7',
+      'ee'.repeat(32),
+      '0'.repeat(63) + '7',
+    ].join(''));
+  });
+
   it('prepareWitness public fields align with WITHDRAWAL_PUBLIC_INPUT_SCHEMA', async () => {
     const v = fixture.vectors[0];
     const note = buildNote(v);
@@ -281,5 +314,22 @@ describe('Withdrawal public-input schema ordering (ZK-032)', () => {
     for (const key of WITHDRAWAL_PUBLIC_INPUT_SCHEMA) {
       expect(witness).toHaveProperty(key);
     }
+  });
+
+  it('buildWithdrawalPublicInputLayout uses witness fields in schema order', async () => {
+    const v = fixture.vectors[0];
+    const note = buildNote(v);
+    const merkleProof = buildMerkleProof(v);
+    const witness = await ProofGenerator.prepareWitness(
+      note,
+      merkleProof,
+      'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
+    );
+
+    const layout = buildWithdrawalPublicInputLayout(witness);
+
+    expect(layout.values.pool_id).toBe(witness.pool_id);
+    expect(layout.fields).toEqual(WITHDRAWAL_PUBLIC_INPUT_SCHEMA.map((key) => witness[key]));
+    expect(layout.bytes.length).toBe(WITHDRAWAL_PUBLIC_INPUT_SCHEMA.length * 32);
   });
 });

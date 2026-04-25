@@ -17,6 +17,12 @@ export interface MerkleCheckpoint {
   leaves?: string[];
 }
 
+export interface BatchSyncResult {
+  insertedLeafIndices: number[];
+  checkpoint: MerkleCheckpoint;
+  root: Buffer;
+}
+
 function toLeaf(commitment: CommitmentLike): Buffer {
   if (Buffer.isBuffer(commitment) || commitment instanceof Uint8Array) {
     const bytes = Buffer.from(commitment);

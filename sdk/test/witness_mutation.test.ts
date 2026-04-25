@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Note } from '../src/note';
-import { MerkleProof, PreparedWitness, ProofGenerator } from '../src/proof';
+import { MerkleProof, PreparedWitness, ProofGenerator, ProvingError } from '../src/proof';
 import { assertValidPreparedWithdrawalWitness, assertValidGroth16ProofBytes, GROTH16_PROOF_BYTE_LENGTH } from '../src/witness';
 import { WitnessValidationError } from '../src/errors';
 
@@ -111,6 +111,29 @@ describe('Fixture mutation contract (one dimension per case)', () => {
   });
 
   it('ProofGenerator.formatProof rejects under-long proof', () => {
-    expect(() => ProofGenerator.formatProof(new Uint8Array(1))).toThrow(WitnessValidationError);
+    expect(() =>
+      ProofGenerator.formatProof(new Uint8Array(1), {
+        pool_id: good.pool_id,
+        root: good.root,
+        nullifier_hash: good.nullifier_hash,
+        recipient: good.recipient,
+        amount: good.amount,
+        relayer: good.relayer,
+        fee: good.fee,
+      })
+    ).toThrow(ProvingError);
+  });
+
+  it('ProofGenerator.formatProof rejects missing public inputs before formatting completes', () => {
+    expect(() =>
+      ProofGenerator.formatProof(new Uint8Array(GROTH16_PROOF_BYTE_LENGTH), {
+        root: good.root,
+        nullifier_hash: good.nullifier_hash,
+        recipient: good.recipient,
+        amount: good.amount,
+        relayer: good.relayer,
+        fee: good.fee,
+      } as any)
+    ).toThrow('Invalid withdrawal public-input schema');
   });
 });
