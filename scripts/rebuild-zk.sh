@@ -38,14 +38,17 @@ mkdir -p "$ARTIFACTS_DIR/fixtures/merkle"
 mkdir -p "$ARTIFACTS_DIR/proving_keys/commitment"
 mkdir -p "$ARTIFACTS_DIR/proving_keys/withdraw"
 mkdir -p "$ARTIFACTS_DIR/proving_keys/merkle"
+rm -rf circuits/target
 
 echo "📦 Compiling circuits..."
 for pkg in commitment withdraw merkle; do
   echo "  → Building $pkg..."
-  (cd "circuits/$pkg" && nargo compile)
-  # ZK-041: Copy to versioned circuit directory
-  cp "circuits/$pkg/target/$pkg.json" "$ARTIFACTS_DIR/circuits/$pkg/"
+  (cd "circuits" && nargo compile --package "$pkg")
+  cp "circuits/target/$pkg.json" "artifacts/zk/"
 done
+
+echo "🧪 Regenerating shared commitment vectors..."
+node scripts/generate_commitment_vectors.mjs
 
 echo "📝 Refreshing manifest..."
 node scripts/refresh_manifest.mjs "$ZK_VERSION"

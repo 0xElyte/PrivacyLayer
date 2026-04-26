@@ -53,7 +53,7 @@ export const DEFAULT_DENOMINATION = DENOMINATION_100_XLM;
  * circuits/lib/src/hash/nullifier.nr so both stacks produce identical hashes.
  */
 export const NULLIFIER_DOMAIN_SEP_HEX =
-  '0000000000000000000000000000006e756c6c69666965725f646f6d61696e5f7631';
+  '000000000000000000000000006e756c6c69666965725f646f6d61696e5f7631';
 
 export const NOTE_BACKUP_VERSION = 0x01;
 export const NOTE_BACKUP_PREFIX = 'privacylayer-note:';
