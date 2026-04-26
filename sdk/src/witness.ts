@@ -156,10 +156,11 @@ export function assertValidPreparedWithdrawalWitness(
     );
   }
 
-  const expectNh = computeNullifierHash(witness.nullifier, witness.root);
+  // ZK-035: Pool-scoped nullifier hash validation
+  const expectNh = computeNullifierHash(witness.nullifier, witness.pool_id);
   if (expectNh !== witness.nullifier_hash) {
     throw new WitnessValidationError(
-      "nullifier_hash is inconsistent with (nullifier, root); possible cross-pool or replay issue",
+      "nullifier_hash is inconsistent with (nullifier, pool_id); possible cross-pool or replay issue",
       "WITNESS_SEMANTICS",
       "domain",
     );

@@ -172,7 +172,7 @@ export function poolIdToField(poolId: string): string {
 }
 
 /**
- * Canonical public-input ordering for the withdrawal circuit (ZK-032).
+ * Encoding Module (ZK-008)
  *
  * Mirrors the `pub` parameter declaration order in circuits/withdraw/src/main.nr.
  * Any change here must be reflected in witness preparation, proof formatting,
