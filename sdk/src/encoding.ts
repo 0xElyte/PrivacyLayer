@@ -89,25 +89,29 @@ export function stellarAddressToField(address: string): string {
 }
 
 /**
- * Compute the domain-separated nullifier hash: H(DOMAIN, nullifier, root).
+ * Compute the domain-separated nullifier hash: H(DOMAIN, nullifier, pool_id) (ZK-035).
  *
  * The withdrawal circuit defines (circuits/lib/src/hash/nullifier.nr):
- *   nullifier_hash = pedersen_hash([NULLIFIER_DOMAIN_SEP, nullifier, root])
+ *   nullifier_hash = pedersen_hash([NULLIFIER_DOMAIN_SEP, nullifier, pool_id])
  *
  * The domain separator prevents cross-domain hash conflation between the
  * nullifier and commitment hash domains.
  *
+ * ZK-035: Changed from root-bound to pool-scoped nullifier derivation.
+ * Spend identifiers remain stable across historical roots for the same note and pool.
+ * Cross-pool replays are rejected by construction since pool_id is part of the hash.
+ *
  * This SDK implementation uses SHA-256 as a structural stand-in for the
  * BN254 Pedersen hash.  Replace with a real BN254 Pedersen implementation
  * (e.g. @noir-lang/barretenberg) before running against a real prover.
- * The input layout (domain ‖ nullifier ‖ root) mirrors the Noir circuit
+ * The input layout (domain ‖ nullifier ‖ pool_id) mirrors the Noir circuit
  * so that both stacks are structurally equivalent.
  */
-export function computeNullifierHash(nullifierField: string, rootField: string): string {
+export function computeNullifierHash(nullifierField: string, poolIdField: string): string {
   const input = Buffer.concat([
     Buffer.from(NULLIFIER_DOMAIN_SEP_HEX, 'hex'),
     Buffer.from(nullifierField.padStart(64, '0'), 'hex'),
-    Buffer.from(rootField.padStart(64, '0'), 'hex'),
+    Buffer.from(poolIdField.padStart(64, '0'), 'hex'),
   ]);
   const digest = createHash('sha256').update(input).digest();
   return fieldToHex(BigInt('0x' + digest.toString('hex')) % FIELD_MODULUS);

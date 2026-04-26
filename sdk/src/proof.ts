@@ -326,7 +326,8 @@ export class ProofGenerator {
     const nullifierField = noteScalarToField(note.nullifier);
     const secretField = noteScalarToField(note.secret);
     const poolIdField = poolIdToField(note.poolId);
-    const nullifierHash = computeNullifierHash(nullifierField, rootField);
+    // ZK-035: Pool-scoped nullifier hash - stable across roots, prevents cross-pool replay
+    const nullifierHash = computeNullifierHash(nullifierField, poolIdField);
     const recipientField = stellarAddressToField(recipient);
     const relayerField =
       fee === 0n ? ZERO_FIELD_HEX : stellarAddressToField(relayer);

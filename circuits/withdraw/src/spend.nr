@@ -15,7 +15,7 @@ use lib::validation;
 /// Verifies all privacy-critical checks for a withdrawal:
 /// 1. Commitment matches note secret and nullifier
 /// 2. Commitment is in the Merkle tree (ownership proof)
-/// 3. Nullifier hash prevents double-spend
+/// 3. Nullifier hash prevents double-spend (ZK-035: pool-scoped)
 /// 4. Amount matches pool's fixed denomination (ZK-030)
 /// 5. Fee and relayer parameters are valid
 ///
@@ -43,8 +43,8 @@ pub fn verify_withdrawal_constraints(
     // (includes leaf_index range validation)
     merkle::verify_inclusion(commitment, leaf_index, hash_path, root);
 
-    // Step 3: Verify nullifier hash (prevents replay across pools)
-    let computed_nullifier_hash = hash::compute_nullifier_hash(nullifier, root);
+    // Step 3: Verify nullifier hash (ZK-035: pool-scoped, prevents double-spend and cross-pool replay)
+    let computed_nullifier_hash = hash::compute_nullifier_hash(nullifier, pool_id);
     validation::validate_nullifier_hash(computed_nullifier_hash, nullifier_hash);
 
     // Step 4: Validate amount matches pool denomination (ZK-030)
