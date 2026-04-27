@@ -10,3 +10,4 @@ export * from './stealth';
 export * from './withdraw';
 export * from './deposit';
 export * from './merkle';
+export { isZeroAccountSentinel } from './zk_constants';

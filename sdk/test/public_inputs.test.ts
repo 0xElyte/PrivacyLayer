@@ -345,3 +345,70 @@ describe('Public Input Encoding (ZK-008)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// ZK-102: Endianness contract — table-driven tests
+//
+// All byte-to-field and field-to-byte conversions in this SDK are BIG-ENDIAN.
+// The most significant byte is at index 0.  These tests pin that contract so
+// any future drift is caught immediately.
+// ---------------------------------------------------------------------------
+describe('Endianness contract (ZK-102)', () => {
+  const cases: Array<{ label: string; value: bigint; expectedMsb: number; expectedLsb: number }> = [
+    { label: '0x01',  value: 1n,    expectedMsb: 0,   expectedLsb: 1 },
+    { label: '0xff',  value: 255n,  expectedMsb: 0,   expectedLsb: 255 },
+    { label: '0x0100',value: 256n,  expectedMsb: 0,   expectedLsb: 0   },
+    { label: '0x0101',value: 257n,  expectedMsb: 0,   expectedLsb: 1   },
+    // 0x01_00 places 1 at byte index 30 (second-to-last), 0 at byte index 31.
+    { label: '0x01_in_byte30', value: 256n, expectedMsb: 0, expectedLsb: 0 },
+  ];
+
+  it('fieldToBuffer is big-endian: MSB at index 0, LSB at index 31', () => {
+    // 1n → [0x00...0x00, 0x01]
+    const buf = fieldToBuffer(1n);
+    expect(buf.length).toBe(32);
+    expect(buf[0]).toBe(0);   // most significant byte
+    expect(buf[31]).toBe(1);  // least significant byte
+  });
+
+  it('fieldToBuffer(256n): byte 30 = 0x01, byte 31 = 0x00', () => {
+    const buf = fieldToBuffer(256n);
+    expect(buf[30]).toBe(1);
+    expect(buf[31]).toBe(0);
+  });
+
+  it('bufferToField is big-endian: first byte is most significant', () => {
+    // [0x01, 0x00] → 256n
+    const buf = Buffer.from([0x01, 0x00]);
+    expect(bufferToField(buf)).toBe(256n);
+  });
+
+  it('bufferToField([0x00, 0x01]) === 1n (not 256n)', () => {
+    const buf = Buffer.from([0x00, 0x01]);
+    expect(bufferToField(buf)).toBe(1n);
+  });
+
+  it('round-trip: fieldToBuffer then bufferToField is identity', () => {
+    const values = [0n, 1n, 255n, 256n, 65535n, FIELD_MODULUS - 1n];
+    for (const v of values) {
+      const buf = fieldToBuffer(v);
+      const recovered = bufferToField(buf);
+      expect(recovered).toBe(v % FIELD_MODULUS);
+    }
+  });
+
+  it('hexToField and fieldToHex are consistent with big-endian bytes', () => {
+    // fieldToHex produces a 64-char hex string where the leftmost chars are MSB.
+    const hex = fieldToHex(256n);         // "00...0100"
+    expect(hex.slice(-4)).toBe('0100');   // last four hex chars = 0x01, 0x00
+    expect(hex.slice(0, 60)).toBe('0'.repeat(60));
+  });
+
+  it.each([
+    [Buffer.from([0xff]), 255n],
+    [Buffer.from([0x01, 0x00]), 256n],
+    [Buffer.from([0x00, 0x00, 0x01]), 1n],
+  ])('bufferToField(%s) === %s', (buf, expected) => {
+    expect(bufferToField(buf as Buffer)).toBe(expected);
+  });
+});
