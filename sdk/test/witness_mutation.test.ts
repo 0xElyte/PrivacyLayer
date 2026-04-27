@@ -1,19 +1,31 @@
-import fs from 'fs';
-import path from 'path';
-import { Note } from '../src/note';
-import { MerkleProof, PreparedWitness, ProofGenerator, ProvingError } from '../src/proof';
-import { assertValidPreparedWithdrawalWitness, assertValidGroth16ProofBytes, GROTH16_PROOF_BYTE_LENGTH } from '../src/witness';
-import { WitnessValidationError } from '../src/errors';
+// ZK-101: deduplicated imports — file previously contained two conflicting
+// import blocks (single-quote/CommonJS style and double-quote/ESM style).
 import fs from "fs";
 import path from "path";
 import { Note } from "../src/note";
-import { MerkleProof, PreparedWitness, ProofGenerator } from "../src/proof";
+import { MerkleProof, PreparedWitness, ProofGenerator, ProvingError } from "../src/proof";
 import {
   assertValidPreparedWithdrawalWitness,
   assertValidGroth16ProofBytes,
   GROTH16_PROOF_BYTE_LENGTH,
 } from "../src/witness";
 import { WitnessValidationError } from "../src/errors";
+
+// ---------------------------------------------------------------------------
+// Guard: catch duplicate-import accidents early at lint / compile time.
+// ---------------------------------------------------------------------------
+// The symbols below are re-exported by the modules above. If any of them ever
+// become undefined the test suite fails before a single `it` block runs,
+// giving a clear signal that the import graph is broken again.
+if (
+  typeof assertValidPreparedWithdrawalWitness !== "function" ||
+  typeof assertValidGroth16ProofBytes !== "function" ||
+  typeof GROTH16_PROOF_BYTE_LENGTH !== "number"
+) {
+  throw new Error(
+    "[ZK-101 guard] Witness module exports are missing — check for broken re-exports or duplicate import blocks.",
+  );
+}
 
 const VECTORS = path.join(__dirname, "golden/vectors.json");
 const fixture = JSON.parse(fs.readFileSync(VECTORS, "utf8"));
@@ -126,10 +138,10 @@ describe("Fixture mutation contract (one dimension per case)", () => {
   });
 
   it("M_hash_path: one sibling still passes binding but documents inclusion failure at circuit (semantics not checked here)", () => {
-    const path = good.hash_path.slice();
-    const flip = (path[0]![0] === "0" ? "1" : "0") + path[0]!.slice(1);
-    path[0] = flip;
-    const w: PreparedWitness = { ...good, hash_path: path };
+    const p = good.hash_path.slice();
+    const flip = (p[0]![0] === "0" ? "1" : "0") + p[0]!.slice(1);
+    p[0] = flip;
+    const w: PreparedWitness = { ...good, hash_path: p };
     assertValidPreparedWithdrawalWitness(w, { merkleDepth: OFFLINE_DEPTH });
   });
 
@@ -141,7 +153,7 @@ describe("Fixture mutation contract (one dimension per case)", () => {
     expect(() => assertValidGroth16ProofBytes(ok)).not.toThrow();
   });
 
-  it('ProofGenerator.formatProof rejects under-long proof', () => {
+  it("ProofGenerator.formatProof rejects under-long proof", () => {
     expect(() =>
       ProofGenerator.formatProof(new Uint8Array(1), {
         pool_id: good.pool_id,
@@ -151,7 +163,7 @@ describe("Fixture mutation contract (one dimension per case)", () => {
         amount: good.amount,
         relayer: good.relayer,
         fee: good.fee,
-      })
+      }),
     ).toThrow(ProvingError);
   });
 

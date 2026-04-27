@@ -9,11 +9,37 @@ export const GROTH16_PROOF_BYTE_LENGTH = 256;
 export const ZERO_FIELD_HEX = '0'.repeat(64);
 
 /**
- * Canonical Stellar zero-account strkey used as the default relayer when no
- * relayer is configured. The matching field representation is `ZERO_FIELD_HEX`.
+ * Canonical Stellar zero-account strkey — the "no-relayer" sentinel (ZK-104).
+ *
+ * SEMANTICS (decided by ZK-104):
+ *   - This address is NOT a real funded account; it MUST NOT be used as a
+ *     recipient or as a party to any on-chain transaction other than as the
+ *     optional-relayer sentinel.
+ *   - SDK relayer paths: when `relayer` is omitted or set to this value, the
+ *     encoded relayer field is `ZERO_FIELD_HEX` (32 bytes of 0x00) and fee
+ *     MUST also be zero.
+ *   - Contract side: `decode_optional_relayer` in address_decoder.rs returns
+ *     `None` when it receives 32 zero bytes, which matches this sentinel.
+ *   - Validation: `encodeStellarAddress(STELLAR_ZERO_ACCOUNT)` encodes to
+ *     `ZERO_FIELD_HEX`.  This is intentional and does NOT mean the address is
+ *     a valid funding destination.
+ *   - Tests: a zero-account passed as recipient is INVALID and must be rejected
+ *     by the witness validator.  A zero-account passed as relayer is VALID and
+ *     means "no relayer".
+ *
+ * The matching field representation is `ZERO_FIELD_HEX`.
  */
 export const STELLAR_ZERO_ACCOUNT =
   'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
+
+/**
+ * Helper: returns true if the given Stellar strkey is the zero-account
+ * sentinel (i.e. the no-relayer indicator).  Do NOT use this to validate
+ * recipient addresses — recipients must be non-zero.
+ */
+export function isZeroAccountSentinel(address: string): boolean {
+  return address === STELLAR_ZERO_ACCOUNT;
+}
 
 // BN254 scalar field prime
 // r = 21888242871839275222246405745257275088548364400416034343698204186575808495617
